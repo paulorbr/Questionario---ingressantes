@@ -122,6 +122,65 @@ def plotar_multipla_escolha(df_dados, col_nome, titulo, cor_seq='Blues'):
     fig.update_traces(textposition='outside')
     exibir_grafico(fig)
 
+# Função para processar opções de múltipla escolha e isolar o campo "Outros" sem partir textos
+def plotar_multipla_com_outros(df_dados, col_nome, titulo, opcoes_padrao, cor_seq='Blues'):
+    s = df_dados[col_nome].dropna()
+    if s.empty:
+        st.info("Nenhuma resposta registada para este campus nesta questão.")
+        return
+
+    contagem_padrao = {op: 0 for op in opcoes_padrao}
+    respostas_custom = []
+
+    for val in s:
+        texto_trabalho = str(val)
+        # Identifica as opções oficiais marcadas
+        for op in sorted(opcoes_padrao, key=len, reverse=True):
+            if op in texto_trabalho:
+                contagem_padrao[op] += 1
+                texto_trabalho = texto_trabalho.replace(op, '')
+        
+        # Limpa vírgulas e espaços restantes para extrair o texto dissertativo
+        custom = re.sub(r'^[\s,]+|[\s,]+$', '', texto_trabalho)
+        custom = re.sub(r'[\s,]{2,}', ', ', custom).strip()
+        if custom and len(custom) > 1 and custom not in [',', ';', '-', '.']:
+            respostas_custom.append(custom)
+
+    # Monta a tabela do gráfico
+    lista_final = []
+    for op in opcoes_padrao:
+        if contagem_padrao[op] > 0:
+            lista_final.append({'Opção': op, 'Respostas': contagem_padrao[op]})
+
+    if respostas_custom:
+        lista_final.append({'Opção': 'Outros (respostas dissertativas)', 'Respostas': len(respostas_custom)})
+
+    df_cont = pd.DataFrame(lista_final).sort_values(by='Respostas', ascending=False)
+
+    fig = px.bar(
+        df_cont,
+        x='Respostas',
+        y='Opção',
+        orientation='h',
+        color='Respostas',
+        color_continuous_scale=cor_seq,
+        title=titulo,
+        text='Respostas'
+    )
+    fig.update_layout(
+        yaxis=dict(autorange="reversed"),
+        margin=dict(l=10, r=10, t=35, b=10),
+        height=max(280, len(df_cont) * 36)
+    )
+    fig.update_traces(textposition='outside')
+    exibir_grafico(fig)
+
+    # Expansor com os relatos dissertativos dos docentes
+    if respostas_custom:
+        with st.expander(f"📝 Ver observações e sugestões de 'Outros' ({len(respostas_custom)} relatos)"):
+            for idx_c, r_text in enumerate(respostas_custom, 1):
+                st.markdown(f"**{idx_c}.** {r_text}")
+
 # -------------------------------------------------------------
 # 3. ABAS PRINCIPAIS DO NAVEGADOR (TABS)
 # -------------------------------------------------------------
@@ -185,18 +244,69 @@ with tab_docentes:
 
     # Seção 4: Conteúdos por Área
     st.subheader("4. Conteúdos Específicos por Área")
-    plotar_multipla_escolha(df_doc, df_doc.columns[43], "AR. Área de Humanas")
-    plotar_multipla_escolha(df_doc, df_doc.columns[44], "AS. Área de Biológicas e Saúde")
-    plotar_multipla_escolha(df_doc, df_doc.columns[45], "AT. Área de Exatas e Engenharias")
-    plotar_multipla_escolha(df_doc, df_doc.columns[46], "AU. Área de Licenciaturas e Pedagogia")
+    # AR. Humanas
+    padrao_humanas = [
+        'História geral e do Brasil',
+        'Noções de economia e finanças',
+        'Noções de direito e cidadania',
+        'Geografia e atualidades'
+    ]
+    st.markdown("#### AR. Área de Humanas")
+    plotar_multipla_com_outros(df_doc, df_doc.columns[43], "Conteúdos prioritários - Humanas", padrao_humanas, cor_seq='Blues')
+
+    # AS. Biológicas e Saúde
+    padrao_bio = [
+        'Biologia celular e molecular',
+        'Estatística básica',
+        'Química básica (estrutura atômica, ligações, funções inorgânicas e orgânicas)',
+        'Física básica (movimento, forças, energia, termodinâmica)',
+        'Anatomia e fisiologia básicas'
+    ]
+    st.markdown("#### AS. Área de Biológicas e Saúde")
+    plotar_multipla_com_outros(df_doc, df_doc.columns[44], "Conteúdos prioritários - Biológicas e Saúde", padrao_bio, cor_seq='Teal')
+
+    # AT. Exatas e Engenharias
+    padrao_exatas = [
+        'Cálculo (limites, derivadas, integrais)',
+        'Álgebra linear (matrizes, sistemas lineares, vetores)',
+        'Física (mecânica, eletricidade, ondulatória)',
+        'Química geral',
+        'Programação e lógica de programação'
+    ]
+    st.markdown("#### AT. Área de Exatas e Engenharias")
+    plotar_multipla_com_outros(df_doc, df_doc.columns[45], "Conteúdos prioritários - Exatas e Engenharias", padrao_exatas, cor_seq='Blues')
+
+    # AU. Licenciaturas e Pedagogia
+    padrao_lic = [
+        'Língua Portuguesa (ênfase em produção de texto)',
+        'Conhecimentos pedagógicos e didáticos básicos',
+        'Psicologia da educação',
+        'Políticas educacionais',
+        'Matemática (ênfase em metodologia de ensino)'
+    ]
+    st.markdown("#### AU. Área de Licenciaturas e Pedagogia")
+    plotar_multipla_com_outros(df_doc, df_doc.columns[46], "Conteúdos prioritários - Licenciaturas", padrao_lic, cor_seq='Purples')
 
     st.divider()
 
     # Seção 5: Habilidades Transversais e Anotações
     st.subheader("5. Habilidades Transversais e Anotações Livres")
-    plotar_multipla_escolha(df_doc, df_doc.columns[47], "AV. Habilidades transversais mais deficitárias")
+
+    # AV. Habilidades Transversais
+    padrao_transversais = [
+        'Capacidade de concentração e foco',
+        'Autonomia e proatividade para buscar conhecimento',
+        'Organização e gestão do tempo de estudo',
+        'Pensamento crítico e capacidade de argumentação',
+        'Gerenciamento de ansiedade e estresse diante de avaliações',
+        'Comunicação oral (apresentação de ideias, participação em debates)',
+        'Letramento digital (uso ético e crítico da informação)',
+        'Habilidade para trabalhar em grupo'
+    ]
+    plotar_multipla_com_outros(df_doc, df_doc.columns[47], "AV. Habilidades mais deficitárias apontadas pelos docentes", padrao_transversais, cor_seq='Oranges')
 
     st.write("---")
+    # AW. Anotações Livres
     respostas_aw = df_doc[df_doc.columns[48]].dropna().tolist()
     st.write(f"**AW. Anotações Dissertativas dos Docentes ({len(respostas_aw)} respostas):**")
     with st.expander("🔍 Clique aqui para ler as sugestões abertas dos professores"):
@@ -205,8 +315,6 @@ with tab_docentes:
             respostas_aw = [r for r in respostas_aw if termo.lower() in str(r).lower()]
         for idx, txt in enumerate(respostas_aw, 1):
             st.markdown(f"**{idx}.** {txt}")
-
-    st.divider()
 
     # Seção 6: Proposta de Nivelamento
     st.subheader("6. Proposta de Nivelamento - Visão Docente")
@@ -349,7 +457,7 @@ with tab_estudantes:
 # ==========================================================
     # SEÇÃO 6: PROPOSTA DE NIVELAMENTO - VISÃO DISCENTE (AD a AF)
     # ==========================================================
-    st.subheader("6. Formato Ideal de Nivelamento - Visão Discente (Colunas AD a AF)")
+    st.subheader("6. Formato Ideal de Nivelamento - Visão Discente")
 
     ca1, ca2, ca3 = st.columns(3)
 
@@ -359,10 +467,10 @@ with tab_estudantes:
         d_ad.columns = ['Formato', 'Votos']
         
         fig_ad = px.pie(
-            d_ad, 
-            values='Votos', 
-            names='Formato', 
-            title="AD. Formato Mais Proveitoso", 
+            d_ad,
+            values='Votos',
+            names='Formato',
+            title="AD. Formato Mais Proveitoso",
             hole=0.45,
             color_discrete_sequence=['#1976d2', '#64b5f6', '#ef5350']
         )
