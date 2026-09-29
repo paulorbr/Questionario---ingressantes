@@ -248,9 +248,56 @@ with tab_estudantes:
         fig_k.update_traces(textposition='outside')
         exibir_grafico(fig_k)
     with ce2:
-        # Coluna L: Maior dificuldade
-        plotar_multipla_escolha(df_est, df_est.columns[11], "L. Maior dificuldade enfrentada no início", cor_seq='Teal')
-
+        # Coluna L: Maior dificuldade (Resposta Única com Campo Aberto)
+        col_l = df_est.columns[11]
+        s_l = df_est[col_l].dropna()
+        
+        if s_l.empty:
+            st.info("Nenhuma resposta registrada para este campus nesta questão.")
+        else:
+            opcoes_padrao_l = [
+                'Conciliar a faculdade com trabalho/outras responsabilidades',
+                'Fazer as leituras obrigatórias com profundidade',
+                'Acompanhar o ritmo dos professores nas aulas',
+                'Gerenciar a ansiedade e o medo de reprovar',
+                'Entender a linguagem acadêmica (termos técnicos, jargões)',
+                'Escrever trabalhos e provas dissertativas',
+                'Fazer amizades e se enturmar',
+                'Usar as ferramentas digitais (Google Sala de Aula, bibliotecas virtuais)'
+                'Resolver exercícios e problemas práticos',
+            ]
+            
+            # Identifica respostas personalizadas (digitadas no campo "Outro")
+            respostas_custom = s_l[~s_l.isin(opcoes_padrao_l)].tolist()
+            
+            # Agrupa as personalizadas em "Outros" para não poluir o gráfico
+            s_l_agrupada = s_l.apply(lambda x: x if x in opcoes_padrao_l else 'Outros (respostas dissertativas)')
+            contagem_l = s_l_agrupada.value_counts().reset_index()
+            contagem_l.columns = ['Dificuldade', 'Alunos']
+            
+            fig_l = px.bar(
+                contagem_l, 
+                x='Alunos', 
+                y='Dificuldade', 
+                orientation='h', 
+                color='Alunos',
+                color_continuous_scale='Teal', 
+                title="L. Maior dificuldade enfrentada no início", 
+                text='Alunos'
+            )
+            fig_l.update_layout(
+                yaxis=dict(autorange="reversed"), 
+                margin=dict(l=10, r=10, t=35, b=10), 
+                height=340
+            )
+            fig_l.update_traces(textposition='outside')
+            exibir_grafico(fig_l)
+            
+            # Expansor com os parágrafos completos escritos pelos estudantes
+            if respostas_custom:
+                with st.expander(f"📝 Ver respostas dissertativas de 'Outros' ({len(respostas_custom)} relatos)"):
+                    for idx_c, r_text in enumerate(respostas_custom, 1):
+                        st.markdown(f"**{idx_c}.** {r_text}")
     st.divider()
 
     # Seção 2: Leitura, Escrita e Comunicação (M a Q)
