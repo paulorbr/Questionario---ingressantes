@@ -346,22 +346,81 @@ with tab_estudantes:
 
     st.divider()
 
-    # Seção 6: Proposta de Nivelamento (AD a AF)
-    st.subheader("6. Formato Ideal de Nivelamento - Visão Discente")
+# ==========================================================
+    # SEÇÃO 6: PROPOSTA DE NIVELAMENTO - VISÃO DISCENTE (AD a AF)
+    # ==========================================================
+    st.subheader("6. Formato Ideal de Nivelamento - Visão Discente (Colunas AD a AF)")
+
     ca1, ca2, ca3 = st.columns(3)
+
     with ca1:
+        # AD. Formato mais proveitoso
         d_ad = df_est[df_est.columns[29]].value_counts().reset_index()
         d_ad.columns = ['Formato', 'Votos']
-        fig_ad = px.pie(d_ad, values='Votos', names='Formato', title="AD. Formato Mais Proveitoso", hole=0.35)
+        
+        fig_ad = px.pie(
+            d_ad, 
+            values='Votos', 
+            names='Formato', 
+            title="AD. Formato Mais Proveitoso", 
+            hole=0.45,
+            color_discrete_sequence=['#1976d2', '#64b5f6', '#ef5350']
+        )
+        fig_ad.update_traces(textposition='inside', textinfo='percent')
+        fig_ad.update_layout(
+            legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+            margin=dict(l=10, r=10, t=40, b=80),
+            height=390
+        )
         exibir_grafico(fig_ad)
+
     with ca2:
-        d_ae = df_est[df_est.columns[30]].value_counts().reset_index()
+        # AE. Carga Horária Suportável (Rótulos limpos e sem cortar)
+        mapa_cargas = {
+            '4 horas distribuídas em cinco dias da semana totalizando 20h': '20h (5 dias / 1 sem)',
+            '4 horas distribuídas em dois dias da semana totalizando 8h': '8h (2 dias)',
+            '4 horas distribuídas em cinco dias ao longo de duas semanas totalizando 40h': '40h (10 dias / 2 sem)'
+        }
+        s_ae = df_est[df_est.columns[30]].map(lambda x: mapa_cargas.get(x, x))
+        d_ae = s_ae.value_counts().reset_index()
         d_ae.columns = ['Carga Horária', 'Votos']
-        fig_ae = px.bar(d_ae, x='Votos', y='Carga Horária', orientation='h', color='Carga Horária', title="AE. Carga Horária Suportável", text='Votos')
+
+        fig_ae = px.bar(
+            d_ae, 
+            x='Carga Horária', 
+            y='Votos', 
+            color='Carga Horária',
+            title="AE. Carga Horária Suportável", 
+            text='Votos',
+            color_discrete_sequence=['#0d47a1', '#1976d2', '#90caf9']
+        )
         fig_ae.update_traces(textposition='outside')
+        fig_ae.update_layout(
+            showlegend=False,
+            margin=dict(l=10, r=10, t=40, b=40),
+            height=390,
+            xaxis_title="",
+            yaxis_title="Nº de Alunos"
+        )
         exibir_grafico(fig_ae)
+
     with ca3:
+        # AF. Melhor Horário para as Aulas
         d_af = df_est[df_est.columns[31]].value_counts().reset_index()
         d_af.columns = ['Horário', 'Votos']
-        fig_af = px.pie(d_af, values='Votos', names='Horário', title="AF. Melhor Horário para as Aulas", hole=0.35)
+
+        fig_af = px.pie(
+            d_af, 
+            values='Votos', 
+            names='Horário', 
+            title="AF. Melhor Turno / Horário", 
+            hole=0.45,
+            color_discrete_sequence=['#0d47a1', '#42a5f5', '#ffb74d']
+        )
+        fig_af.update_traces(textposition='inside', textinfo='percent')
+        fig_af.update_layout(
+            legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+            margin=dict(l=10, r=10, t=40, b=80),
+            height=390
+        )
         exibir_grafico(fig_af)
